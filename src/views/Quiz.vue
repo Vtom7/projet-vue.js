@@ -3,20 +3,20 @@ import { ref } from 'vue'
 
 let quiz = ref([]);
 
-fetch('http://localhost:3000/quiz/1')
+fetch('http://localhost:8100/quiz/1')
   .then(response => response.json())
   .then(data => quiz.value = data)
 
 
 let questions = ref([]);
 
-fetch('http://localhost:3000/questions')
+fetch('http://localhost:8100/questions')
   .then(responses => responses.json())
   .then(data => questions.value = data)
 
 let reponses = ref([]);
 
-fetch('http://localhost:3000/reponses')
+fetch('http://localhost:8100/reponses')
   .then(responses => responses.json())
   .then(data => reponses.value = data)
 
