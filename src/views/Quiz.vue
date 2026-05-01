@@ -23,21 +23,37 @@ fetch('http://localhost:8100/reponses')
 </script>
 
 <template>
-  <h1>{{ quiz.titre }}</h1>
-    <div class="quiz-container">
-        <ul v-for="question in questions" :key="question.id">
-          <li v-if="question.id_quiz == 1">
-            <p>{{ question.contenu }}</p>
-            <div>
-                <ul v-for="reponse in reponses" :key="reponse.id">
-                  <li v-if="reponse.id_question == question.id">
-                      {{ reponse.reponse }}
-                  </li>
-                </ul>
+  <div class="quiz-container">
+
+    <div class="quiz-card">
+
+      <h1>{{ quiz.titre }}</h1>
+
+      <div v-for="question in questions" :key="question.id">
+
+        <!-- filtre quiz -->
+        <div v-if="question.id_quiz == 1" class="question-block">
+
+          <p class="question">{{ question.contenu }}</p>
+
+          <div class="reponses">
+            <div
+              v-for="reponse in reponses"
+              :key="reponse.id"
+            >
+              <div v-if="reponse.id_question == question.id" class="reponse">
+                {{ reponse.reponse }}
+              </div>
             </div>
-          </li>
-        </ul>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
+  </div>
 </template>
 
 <style scoped>
@@ -47,5 +63,44 @@ fetch('http://localhost:8100/reponses')
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #42b883, #2c3e50);
+  padding: 20px;
+}
+
+.quiz-card {
+  background: white;
+  padding: 35px;
+  border-radius: 16px;
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.question-block {
+  margin-bottom: 25px;
+}
+
+.question {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.reponse {
+  background: #f3f3f3;
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.reponse:hover {
+  background: #42b883;
+  color: white;
 }
 </style>
