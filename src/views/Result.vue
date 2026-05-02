@@ -4,25 +4,33 @@ import ResultCard from '../components/ResultCard.vue'
 
 const route = useRoute()
 
+// --------------------
+// DATA
+// --------------------
 const score = Number(route.query.score) || 0
 const total = Number(route.query.total) || 0
 const percentage = total ? Math.round((score / total) * 100) : 0
 
-function getRank(score) {
-  const ranks = {
-    10: "A+",
-    9: "A",
-    8: "B+",
-    7: "B",
-    6: "C+",
-    5: "C"
-  }
-  return ranks[score] || "F"
+// --------------------
+// RANK (corrigé)
+// --------------------
+function getRank(p) {
+  if (p === 100) return "A+"
+  if (p >= 80) return "A"
+  if (p >= 70) return "B+"
+  if (p >= 60) return "B"
+  if (p >= 50) return "C+"
+  if (p >= 40) return "C"
+  return "F"
 }
 
+// --------------------
+// MESSAGE
+// --------------------
 function getMessage() {
+  if (total === 0) return "Aucune question 😅"
   if (score === total) return "🔥 Parfait !"
-  if (score >= total / 2) return "👍 Bon niveau !"
+  if (percentage >= 50) return "👍 Bon niveau !"
   return "💀 Continue à t'entraîner"
 }
 </script>
@@ -33,7 +41,7 @@ function getMessage() {
       :score="score"
       :total="total"
       :percentage="percentage"
-      :rank="getRank(score)"
+      :rank="getRank(percentage)"
       :message="getMessage()"
     />
   </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -7,29 +7,29 @@ const router = useRouter()
 const quiz = ref({})
 const questions = ref([])
 const reponses = ref([])
-
 const selectedAnswers = ref({})
 
 // --------------------
-// FETCH DIRECT
+// FETCH (sans onMounted)
 // --------------------
 fetch('http://localhost:8100/quiz/1')
   .then(res => res.json())
-  .then(data => {
-    quiz.value = data
-  })
+  .then(data => quiz.value = data)
 
 fetch('http://localhost:8100/questions')
   .then(res => res.json())
-  .then(data => {
-    questions.value = data
-  })
+  .then(data => questions.value = data)
 
 fetch('http://localhost:8100/reponses')
   .then(res => res.json())
-  .then(data => {
-    reponses.value = data
-  })
+  .then(data => reponses.value = data)
+
+// --------------------
+// QUESTIONS FILTRÉES
+// --------------------
+const filteredQuestions = computed(() =>
+  questions.value.filter(q => q.id_quiz === quiz.value.id)
+)
 
 // --------------------
 // SELECT ANSWER
@@ -44,14 +44,17 @@ function selectAnswer(questionId, reponseId) {
 function calculateScore() {
   let score = 0
 
-  questions.value.forEach(q => {
+  filteredQuestions.value.forEach(q => {
     const selected = selectedAnswers.value[q.id]
+
+    if (!selected) return
 
     const answer = reponses.value.find(
       r => r.id === selected && r.id_question === q.id
     )
 
-    if (answer && answer.is_correct) {
+    // ✅ correction ici : "correct"
+    if (answer && answer.correct) {
       score++
     }
   })
@@ -60,18 +63,15 @@ function calculateScore() {
 }
 
 // --------------------
-// VALIDATION + REDIRECT
+// VALIDATION
 // --------------------
 function validateQuiz() {
   const score = calculateScore()
-  const total = questions.value.length
+  const total = filteredQuestions.value.length
 
   router.push({
     path: '/result',
-    query: {
-      score,
-      total
-    }
+    query: { score, total }
   })
 }
 </script>
@@ -82,10 +82,9 @@ function validateQuiz() {
 
       <h1>{{ quiz.titre }}</h1>
 
-      <div v-for="question in questions" :key="question.id">
+      <div v-for="question in filteredQuestions" :key="question.id">
 
-        <div v-if="question.id_quiz === quiz.id" class="question-block">
-
+        <div class="question-block">
           <p class="question">{{ question.contenu }}</p>
 
           <div class="reponses">
@@ -99,7 +98,6 @@ function validateQuiz() {
               {{ reponse.reponse }}
             </div>
           </div>
-
         </div>
 
       </div>
