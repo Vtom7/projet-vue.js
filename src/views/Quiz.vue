@@ -1,49 +1,102 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-let quiz = ref([]);
+const router = useRouter()
 
+const quiz = ref({})
+const questions = ref([])
+const reponses = ref([])
+
+const selectedAnswers = ref({})
+
+// --------------------
+// FETCH DIRECT
+// --------------------
 fetch('http://localhost:8100/quiz/1')
-  .then(response => response.json())
-  .then(data => quiz.value = data)
-
-
-let questions = ref([]);
+  .then(res => res.json())
+  .then(data => {
+    quiz.value = data
+  })
 
 fetch('http://localhost:8100/questions')
-  .then(responses => responses.json())
-  .then(data => questions.value = data)
-
-let reponses = ref([]);
+  .then(res => res.json())
+  .then(data => {
+    questions.value = data
+  })
 
 fetch('http://localhost:8100/reponses')
-  .then(responses => responses.json())
-  .then(data => reponses.value = data)
+  .then(res => res.json())
+  .then(data => {
+    reponses.value = data
+  })
 
+// --------------------
+// SELECT ANSWER
+// --------------------
+function selectAnswer(questionId, reponseId) {
+  selectedAnswers.value[questionId] = reponseId
+}
+
+// --------------------
+// CALCUL SCORE
+// --------------------
+function calculateScore() {
+  let score = 0
+
+  questions.value.forEach(q => {
+    const selected = selectedAnswers.value[q.id]
+
+    const answer = reponses.value.find(
+      r => r.id === selected && r.id_question === q.id
+    )
+
+    if (answer && answer.is_correct) {
+      score++
+    }
+  })
+
+  return score
+}
+
+// --------------------
+// VALIDATION + REDIRECT
+// --------------------
+function validateQuiz() {
+  const score = calculateScore()
+  const total = questions.value.length
+
+  router.push({
+    path: '/result',
+    query: {
+      score,
+      total
+    }
+  })
+}
 </script>
 
 <template>
   <div class="quiz-container">
-
     <div class="quiz-card">
 
       <h1>{{ quiz.titre }}</h1>
 
       <div v-for="question in questions" :key="question.id">
 
-        <!-- filtre quiz -->
-        <div v-if="question.id_quiz == 1" class="question-block">
+        <div v-if="question.id_quiz === quiz.id" class="question-block">
 
           <p class="question">{{ question.contenu }}</p>
 
           <div class="reponses">
             <div
-              v-for="reponse in reponses"
+              v-for="reponse in reponses.filter(r => r.id_question === question.id)"
               :key="reponse.id"
+              class="reponse"
+              :class="{ selected: selectedAnswers[question.id] === reponse.id }"
+              @click="selectAnswer(question.id, reponse.id)"
             >
-              <div v-if="reponse.id_question == question.id" class="reponse">
-                {{ reponse.reponse }}
-              </div>
+              {{ reponse.reponse }}
             </div>
           </div>
 
@@ -51,8 +104,11 @@ fetch('http://localhost:8100/reponses')
 
       </div>
 
-    </div>
+      <button class="validate-btn" @click="validateQuiz">
+        Valider
+      </button>
 
+    </div>
   </div>
 </template>
 
@@ -102,5 +158,25 @@ h1 {
 .reponse:hover {
   background: #42b883;
   color: white;
+}
+
+.reponse.selected {
+  background: #42b883;
+  color: white;
+  border: 2px solid #2c3e50;
+}
+
+.validate-btn {
+  margin-top: 20px;
+  padding: 12px 20px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.validate-btn:hover {
+  background: #42b883;
 }
 </style>

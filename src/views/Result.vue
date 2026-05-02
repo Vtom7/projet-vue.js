@@ -9,13 +9,20 @@ const total = Number(route.query.total) || 0
 const percentage = total ? Math.round((score / total) * 100) : 0
 
 function getRank(score) {
-  const ranks = { 10:"A+",9:"A",8:"B+",7:"B",6:"C+",5:"C" }
+  const ranks = {
+    10: "A+",
+    9: "A",
+    8: "B+",
+    7: "B",
+    6: "C+",
+    5: "C"
+  }
   return ranks[score] || "F"
 }
 
 function getMessage() {
   if (score === total) return "🔥 Parfait !"
-  if (score >= 6) return "👍 Bon niveau !"
+  if (score >= total / 2) return "👍 Bon niveau !"
   return "💀 Continue à t'entraîner"
 }
 </script>
