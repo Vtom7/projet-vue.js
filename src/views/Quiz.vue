@@ -7,7 +7,7 @@ const router = useRouter()
 // --------------------
 // CONFIG API
 // --------------------
-const API_URL = 'https://quizmusical.alwaysdata.net' // 🔁 remplace par le vrai domaine
+const API_URL = 'https://xxx.alwaysdata.net'
 
 // --------------------
 // STATE
@@ -20,29 +20,58 @@ const loading = ref(true)
 const error = ref(null)
 
 // --------------------
-// FETCH DATA
+// TOKEN
+// --------------------
+function getToken() {
+  return localStorage.getItem('token')
+}
+
+// --------------------
+// FETCH DATA (AVEC JWT)
 // --------------------
 async function loadData() {
   try {
     loading.value = true
+    error.value = null
 
-    const [quizRes, questionsRes, reponsesRes] = await Promise.all([
-      fetch(`${API_URL}/quiz/1`),
-      fetch(`${API_URL}/questions`),
-      fetch(`${API_URL}/reponses`)
-    ])
+    const token = getToken()
 
-    if (!quizRes.ok || !questionsRes.ok || !reponsesRes.ok) {
-      throw new Error('Erreur lors du chargement des données')
+    if (!token) {
+      throw new Error('Utilisateur non connecté (token manquant)')
     }
 
+    const headers = {
+      Authorization: `Bearer ${token}`
+    }
+
+    const [quizRes, questionsRes, reponsesRes] = await Promise.all([
+      fetch(`${API_URL}/quiz/1`, { headers }),
+      fetch(`${API_URL}/questions`, { headers }),
+      fetch(`${API_URL}/reponses`, { headers })
+    ])
+
+    // --------------------
+    // DEBUG ERREURS HTTP
+    // --------------------
+    if (!quizRes.ok || !questionsRes.ok || !reponsesRes.ok) {
+      throw new Error(
+        `API error:
+        quiz=${quizRes.status}
+        questions=${questionsRes.status}
+        reponses=${reponsesRes.status}`
+      )
+    }
+
+    // --------------------
+    // JSON PARSING
+    // --------------------
     quiz.value = await quizRes.json()
     questions.value = await questionsRes.json()
     reponses.value = await reponsesRes.json()
 
   } catch (err) {
     error.value = err.message
-    console.error(err)
+    console.error('Erreur API:', err)
   } finally {
     loading.value = false
   }
@@ -65,21 +94,20 @@ function selectAnswer(questionId, reponseId) {
 }
 
 // --------------------
-// CALCUL SCORE
+// SCORE
 // --------------------
 function calculateScore() {
   let score = 0
 
   filteredQuestions.value.forEach(q => {
     const selected = selectedAnswers.value[q.id]
-
     if (!selected) return
 
     const answer = reponses.value.find(
       r => r.id === selected && r.id_question === q.id
     )
 
-    if (answer && answer.correct) {
+    if (answer?.correct) {
       score++
     }
   })
@@ -109,28 +137,32 @@ function validateQuiz() {
       <p v-if="loading">Chargement...</p>
 
       <!-- ERROR -->
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="error">
+        {{ error }}
+      </p>
 
       <!-- QUIZ -->
       <div v-if="!loading && !error">
 
         <h1>{{ quiz.titre }}</h1>
 
-        <div v-for="question in filteredQuestions" :key="question.id">
+        <div
+          v-for="question in filteredQuestions"
+          :key="question.id"
+          class="question-block"
+        >
 
-          <div class="question-block">
-            <p class="question">{{ question.contenu }}</p>
+          <p class="question">{{ question.contenu }}</p>
 
-            <div class="reponses">
-              <div
-                v-for="reponse in reponses.filter(r => r.id_question === question.id)"
-                :key="reponse.id"
-                class="reponse"
-                :class="{ selected: selectedAnswers[question.id] === reponse.id }"
-                @click="selectAnswer(question.id, reponse.id)"
-              >
-                {{ reponse.reponse }}
-              </div>
+          <div class="reponses">
+            <div
+              v-for="reponse in reponses.filter(r => r.id_question === question.id)"
+              :key="reponse.id"
+              class="reponse"
+              :class="{ selected: selectedAnswers[question.id] === reponse.id }"
+              @click="selectAnswer(question.id, reponse.id)"
+            >
+              {{ reponse.reponse }}
             </div>
           </div>
 
@@ -217,5 +249,6 @@ h1 {
 .error {
   color: red;
   margin-bottom: 10px;
+  white-space: pre-line;
 }
 </style>

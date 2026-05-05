@@ -1,5 +1,17 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { computed } from 'vue'
+
+const router = useRouter()
+
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('token')
+})
+
+function logout() {
+  localStorage.removeItem('token')
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -11,6 +23,14 @@ import { RouterLink } from 'vue-router'
         <RouterLink to="/" class="link">Accueil</RouterLink>
         <RouterLink to="/quiz" class="link">Quiz</RouterLink>
         <RouterLink to="/result" class="link">Résultat</RouterLink>
+
+        <!-- Auth -->
+        <RouterLink v-if="!isLoggedIn" to="/login" class="link">Connexion</RouterLink>
+        <RouterLink v-if="!isLoggedIn" to="/register" class="link">Inscription</RouterLink>
+
+        <button v-if="isLoggedIn" @click="logout" class="link btn-logout">
+          Déconnexion
+        </button>
       </nav>
     </div>
   </header>
@@ -23,46 +43,40 @@ import { RouterLink } from 'vue-router'
   left: 0;
   width: 100%;
   height: 60px;
-
   background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(10px);
   color: white;
   z-index: 1000;
-
-  box-sizing: border-box;
 }
 
-/* Contenu centré et bien contenu */
 .container {
   max-width: 1200px;
   height: 100%;
   margin: 0 auto;
   padding: 0 20px;
-
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* Logo */
 .logo {
   font-weight: bold;
   font-size: 18px;
 }
 
-/* Liens */
 .links {
   display: flex;
   gap: 12px;
 }
 
-/* Style des liens */
 .link {
   color: #ccc;
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 8px;
-  white-space: nowrap;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .link:hover {
@@ -70,21 +84,12 @@ import { RouterLink } from 'vue-router'
   color: white;
 }
 
-/* Lien actif */
-.link.router-link-active {
+.router-link-active {
   background: #42b883;
   color: white;
 }
 
-/* Responsive (petits écrans) */
-@media (max-width: 600px) {
-  .links {
-    gap: 6px;
-  }
-
-  .link {
-    padding: 5px 8px;
-    font-size: 14px;
-  }
+.btn-logout {
+  color: #ff6b6b;
 }
 </style>
