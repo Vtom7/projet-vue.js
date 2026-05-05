@@ -1,28 +1,54 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// --------------------
+// CONFIG API
+// --------------------
+const API_URL = 'https://quizmusical.alwaysdata.net' // 🔁 remplace par le vrai domaine
+
+// --------------------
+// STATE
+// --------------------
 const quiz = ref({})
 const questions = ref([])
 const reponses = ref([])
 const selectedAnswers = ref({})
+const loading = ref(true)
+const error = ref(null)
 
 // --------------------
-// FETCH (sans onMounted)
+// FETCH DATA
 // --------------------
-fetch('http://localhost:8100/quiz/1')
-  .then(res => res.json())
-  .then(data => quiz.value = data)
+async function loadData() {
+  try {
+    loading.value = true
 
-fetch('http://localhost:8100/questions')
-  .then(res => res.json())
-  .then(data => questions.value = data)
+    const [quizRes, questionsRes, reponsesRes] = await Promise.all([
+      fetch(`${API_URL}/quiz/1`),
+      fetch(`${API_URL}/questions`),
+      fetch(`${API_URL}/reponses`)
+    ])
 
-fetch('http://localhost:8100/reponses')
-  .then(res => res.json())
-  .then(data => reponses.value = data)
+    if (!quizRes.ok || !questionsRes.ok || !reponsesRes.ok) {
+      throw new Error('Erreur lors du chargement des données')
+    }
+
+    quiz.value = await quizRes.json()
+    questions.value = await questionsRes.json()
+    reponses.value = await reponsesRes.json()
+
+  } catch (err) {
+    error.value = err.message
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadData)
 
 // --------------------
 // QUESTIONS FILTRÉES
@@ -53,7 +79,6 @@ function calculateScore() {
       r => r.id === selected && r.id_question === q.id
     )
 
-    // ✅ correction ici : "correct"
     if (answer && answer.correct) {
       score++
     }
@@ -80,31 +105,42 @@ function validateQuiz() {
   <div class="quiz-container">
     <div class="quiz-card">
 
-      <h1>{{ quiz.titre }}</h1>
+      <!-- LOADING -->
+      <p v-if="loading">Chargement...</p>
 
-      <div v-for="question in filteredQuestions" :key="question.id">
+      <!-- ERROR -->
+      <p v-if="error" class="error">{{ error }}</p>
 
-        <div class="question-block">
-          <p class="question">{{ question.contenu }}</p>
+      <!-- QUIZ -->
+      <div v-if="!loading && !error">
 
-          <div class="reponses">
-            <div
-              v-for="reponse in reponses.filter(r => r.id_question === question.id)"
-              :key="reponse.id"
-              class="reponse"
-              :class="{ selected: selectedAnswers[question.id] === reponse.id }"
-              @click="selectAnswer(question.id, reponse.id)"
-            >
-              {{ reponse.reponse }}
+        <h1>{{ quiz.titre }}</h1>
+
+        <div v-for="question in filteredQuestions" :key="question.id">
+
+          <div class="question-block">
+            <p class="question">{{ question.contenu }}</p>
+
+            <div class="reponses">
+              <div
+                v-for="reponse in reponses.filter(r => r.id_question === question.id)"
+                :key="reponse.id"
+                class="reponse"
+                :class="{ selected: selectedAnswers[question.id] === reponse.id }"
+                @click="selectAnswer(question.id, reponse.id)"
+              >
+                {{ reponse.reponse }}
+              </div>
             </div>
           </div>
+
         </div>
 
-      </div>
+        <button class="validate-btn" @click="validateQuiz">
+          Valider
+        </button>
 
-      <button class="validate-btn" @click="validateQuiz">
-        Valider
-      </button>
+      </div>
 
     </div>
   </div>
@@ -176,5 +212,10 @@ h1 {
 
 .validate-btn:hover {
   background: #42b883;
+}
+
+.error {
+  color: red;
+  margin-bottom: 10px;
 }
 </style>
